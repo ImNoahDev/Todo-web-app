@@ -1,21 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="https://cdn.tailwindcss.com"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Todo List App</title>
-  <link href="styles.css" rel="stylesheet">
+  <title>Todo App</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 text-gray-900 flex items-center justify-center h-screen">
-  <div class="bg-white p-6 rounded shadow-md w-full max-w-lg">
-    <h1 class="text-3xl font-bold mb-4 text-center">Todo List</h1>
-    <form id="todo-form" class="mb-4 flex">
-      <input id="todo-input" type="text" placeholder="Enter a new todo" class="border p-2 w-full rounded-l-md" required>
-      <button type="submit" class="bg-blue-500 text-white p-2 rounded-r-md">Add</button>
+<body class="flex items-center justify-center h-screen bg-gray-100">
+  <div class="w-full max-w-md p-4 bg-white rounded-lg shadow-lg">
+    <h1 class="text-2xl font-bold mb-4 text-center">Todo App</h1>
+
+    <div id="auth">
+      <form id="register-form" class="mb-4">
+        <h2 class="text-xl mb-2">Register</h2>
+        <input id="register-username" type="text" placeholder="Username" class="mb-2 p-2 border rounded w-full" required>
+        <input id="register-password" type="password" placeholder="Password" class="mb-2 p-2 border rounded w-full" required>
+        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded w-full">Register</button>
+      </form>
+
+      <form id="login-form" class="mb-4">
+        <h2 class="text-xl mb-2">Login</h2>
+        <input id="login-username" type="text" placeholder="Username" class="mb-2 p-2 border rounded w-full" required>
+        <input id="login-password" type="password" placeholder="Password" class="mb-2 p-2 border rounded w-full" required>
+        <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded w-full">Login</button>
+      </form>
+    </div>
+
+    <form id="todo-form" class="mb-4 hidden">
+      <input id="todo-input" type="text" placeholder="Enter a todo item" class="p-2 border rounded w-full" required>
+      <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded mt-2 w-full">Add Todo</button>
     </form>
-    <ul id="todo-list" class="list-none p-0"></ul>
+
+    <ul id="todo-list"></ul>
   </div>
+
   <script src="app.js"></script>
 </body>
 </html>
