@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo List App</title>
+  <link href="styles.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-900 flex items-center justify-center h-screen">
+  <div class="bg-white p-6 rounded shadow-md w-full max-w-md">
+    <h1 class="text-2xl font-bold mb-4">Todo List</h1>
+    <form id="todo-form" class="mb-4">
+      <input id="todo-input" type="text" placeholder="Enter a new todo" class="border p-2 w-full mb-2" required>
+      <button type="submit" class="bg-blue-500 text-white p-2 w-full">Add Todo</button>
+    </form>
+    <ul id="todo-list" class="list-disc pl-5"></ul>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
