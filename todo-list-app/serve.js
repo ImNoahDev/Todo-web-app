@@ -2,7 +2,8 @@ import { serve } from "bun";
 import { readFileSync } from "fs";
 import { join, extname } from "path";
 import sqlite3 from 'sqlite3';
-import { log, error } from "./logger.js"; // Import the logging utility
+import { log, error } from "./logger.js";
+import { registerUser, authenticateUser, verifyToken } from "./src/auth.js";
 
 const db = new sqlite3.Database('./todos.db', (err) => {
   if (err) {
@@ -15,20 +16,7 @@ const db = new sqlite3.Database('./todos.db', (err) => {
 const mimeTypes = {
   '.html': 'text/html',
   '.js': 'application/javascript',
-  '.css': 'text/css',
-  '.json': 'application/json',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.svg': 'image/svg+xml',
-  '.wav': 'audio/wav',
-  '.mp4': 'video/mp4',
-  '.woff': 'application/font-woff',
-  '.ttf': 'application/font-ttf',
-  '.eot': 'application/vnd.ms-fontobject',
-  '.otf': 'application/font-otf',
-  '.wasm': 'application/wasm'
-};
+  '.css': 'text/css',};
 
 serve({
   port: 3000,
@@ -36,18 +24,50 @@ serve({
     log(`${req.method} ${req.url}`);
     const url = new URL(req.url);
 
-    if (req.method === 'GET' && url.pathname === '/api/todos') {
-      return getTodos();
+    if (req.method === 'POST' && url.pathname === '/api/register') {
+      const body = await req.json();
+      try {
+        const user = await registerUser(body.username, body.password);
+        return new Response(JSON.stringify(user), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      } catch (err) {
+        return new Response('User registration failed', { status: 400 });
+      }
+    } else if (req.method === 'POST' && url.pathname === '/api/login') {
+      const body = await req.json();
+      try {
+        const { token } = await authenticateUser(body.username, body.password);
+        return new Response(JSON.stringify({ token }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      } catch (err) {
+        return new Response('Login failed', { status: 400 });
+      }
+    } else if (req.method === 'GET' && url.pathname === '/api/todos') {
+      const token = req.headers.get('Authorization')?.split(' ')[1];
+      const user = verifyToken(token);
+      if (!user) return new Response('Unauthorized', { status: 401 });
+      return getTodos(user.id);
     } else if (req.method === 'POST' && url.pathname === '/api/todos') {
+      const token = req.headers.get('Authorization')?.split(' ')[1];
+      const user = verifyToken(token);
+      if (!user) return new Response('Unauthorized', { status: 401 });
       const body = await req.json();
-      return addTodo(body.text);
+      return addTodo(body.text, user.id);
     } else if (req.method === 'DELETE' && url.pathname.startsWith('/api/todos/')) {
+      const token = req.headers.get('Authorization')?.split(' ')[1];
+      const user = verifyToken(token);
+      if (!user) return new Response('Unauthorized', { status: 401 });
       const id = url.pathname.split('/').pop();
-      return deleteTodo(id);
+      return deleteTodo(id, user.id);
     } else if (req.method === 'PATCH' && url.pathname.startsWith('/api/todos/')) {
+      const token = req.headers.get('Authorization')?.split(' ')[1];
+      const user = verifyToken(token);
+      if (!user) return new Response('Unauthorized', { status: 401 });
       const id = url.pathname.split('/').pop();
       const body = await req.json();
-      return updateTodoStatus(id, body.completed);
+      return updateTodoStatus(id, body.completed, user.id);
     } else {
       return serveStatic(url.pathname);
     }
@@ -72,9 +92,9 @@ function serveStatic(path) {
   }
 }
 
-function getTodos() {
+function getTodos(userId) {
   return new Promise((resolve, reject) => {
-    db.all("SELECT * FROM todos", [], (err, rows) => {
+    db.all("SELECT * FROM todos WHERE user_id = ?", [userId], (err, rows) => {
       if (err) {
         error("Failed to fetch todos", err.message);
         reject(new Response('Internal Server Error', { status: 500 }));
@@ -88,9 +108,9 @@ function getTodos() {
   });
 }
 
-function addTodo(text) {
+function addTodo(text, userId) {
   return new Promise((resolve, reject) => {
-    db.run("INSERT INTO todos (text, completed) VALUES (?, ?)", [text, false], function (err) {
+    db.run("INSERT INTO todos (text, completed, user_id) VALUES (?, ?, ?)", [text, false, userId], function (err) {
       if (err) {
         error("Failed to add todo", err.message);
         reject(new Response('Internal Server Error', { status: 500 }));
@@ -104,9 +124,9 @@ function addTodo(text) {
   });
 }
 
-function deleteTodo(id) {
+function deleteTodo(id, userId) {
   return new Promise((resolve, reject) => {
-    db.run("DELETE FROM todos WHERE id = ?", [id], function (err) {
+    db.run("DELETE FROM todos WHERE id = ? AND user_id = ?", [id, userId], function (err) {
       if (err) {
         error(`Failed to delete todo with id ${id}`, err.message);
         reject(new Response('Internal Server Error', { status: 500 }));
@@ -118,9 +138,9 @@ function deleteTodo(id) {
   });
 }
 
-function updateTodoStatus(id, completed) {
+function updateTodoStatus(id, completed, userId) {
   return new Promise((resolve, reject) => {
-    db.run("UPDATE todos SET completed = ? WHERE id = ?", [completed, id], function (err) {
+    db.run("UPDATE todos SET completed = ? WHERE id = ? AND user_id = ?", [completed, id, userId], function (err) {
       if (err) {
         error(`Failed to update todo with id ${id}`, err.message);
         reject(new Response('Internal Server Error', { status: 500 }));
@@ -131,3 +151,4 @@ function updateTodoStatus(id, completed) {
     });
   });
 }
+
